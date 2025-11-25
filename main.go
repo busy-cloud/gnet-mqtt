@@ -6,15 +6,19 @@ import (
 )
 
 func main() {
+	// 创建handler实例
+	handler := &Handler{}
 
-	err := gnet.Run(&Handler{},
-		"tcp//:1883",
+	// 启动MQTT Broker
+	err := gnet.Run(handler,
+		"tcp://:1883",
 		gnet.WithMulticore(true),
 		gnet.WithReusePort(true),
-		gnet.WithLogLevel(logging.DebugLevel),
+		gnet.WithLogLevel(logging.InfoLevel),
+		gnet.WithTCPNoDelay(gnet.TCPNoDelay),
 	)
+
 	if err != nil {
-		logging.Fatalf("启动失败：%v", err)
-		return
+		logging.Fatalf("Failed to start MQTT Broker: %v", err)
 	}
 }
