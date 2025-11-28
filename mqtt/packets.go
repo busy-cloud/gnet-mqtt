@@ -29,7 +29,7 @@ var (
 
 // ConnectPacket 连接报文
 type ConnectPacket struct {
-	ProtocolName  string
+	ProtocolName  []byte
 	ProtocolLevel byte
 	CleanSession  bool
 	WillFlag      bool
@@ -38,16 +38,16 @@ type ConnectPacket struct {
 	UsernameFlag  bool
 	PasswordFlag  bool
 	KeepAlive     uint16
-	ClientID      string
-	WillTopic     string
+	ClientID      []byte
+	WillTopic     []byte
 	WillMessage   []byte
-	Username      string
+	Username      []byte
 	Password      []byte
 }
 
 // PublishPacket 发布报文
 type PublishPacket struct {
-	TopicName string
+	TopicName []byte
 	Payload   []byte
 	QoS       byte
 	PacketID  uint16
@@ -62,7 +62,7 @@ type SubscribePacket struct {
 }
 
 type SubscribeTopic struct {
-	TopicFilter string
+	TopicFilter []byte
 	QoS         byte
 }
 
@@ -94,25 +94,24 @@ func (r *packetReader) remaining() int {
 	return len(r.buf) - r.pos
 }
 
-// readString 读取UTF-8字符串
-func readString(r *packetReader) (string, error) {
+// readBinary 读取二进制数据
+func readBinary(r *packetReader) ([]byte, error) {
 	if r.remaining() < 2 {
-		return "", ErrMalformedPacket
+		return nil, ErrMalformedPacket
 	}
 
 	lengthBuf := r.readBytes(2)
 	length := binary.BigEndian.Uint16(lengthBuf)
 
 	if length == 0 {
-		return "", nil
+		return []byte{}, nil
 	}
 
 	if r.remaining() < int(length) {
-		return "", ErrMalformedPacket
+		return nil, ErrMalformedPacket
 	}
 
-	strBuf := r.readBytes(int(length))
-	return string(strBuf), nil
+	return r.readBytes(int(length)), nil
 }
 
 // readLength 读取可变字节整数
@@ -187,7 +186,7 @@ func decodeConnectPacket(r *packetReader, flags byte) (*ConnectPacket, error) {
 	p := &ConnectPacket{}
 
 	var err error
-	p.ProtocolName, err = readString(r)
+	p.ProtocolName, err = readBinary(r)
 	if err != nil {
 		return nil, err
 	}
@@ -215,13 +214,13 @@ func decodeConnectPacket(r *packetReader, flags byte) (*ConnectPacket, error) {
 	keepAliveBuf := r.readBytes(2)
 	p.KeepAlive = binary.BigEndian.Uint16(keepAliveBuf)
 
-	p.ClientID, err = readString(r)
+	p.ClientID, err = readBinary(r)
 	if err != nil {
 		return nil, err
 	}
 
 	if p.WillFlag {
-		p.WillTopic, err = readString(r)
+		p.WillTopic, err = readBinary(r)
 		if err != nil {
 			return nil, err
 		}
@@ -239,7 +238,7 @@ func decodeConnectPacket(r *packetReader, flags byte) (*ConnectPacket, error) {
 	}
 
 	if p.UsernameFlag {
-		p.Username, err = readString(r)
+		p.Username, err = readBinary(r)
 		if err != nil {
 			return nil, err
 		}
@@ -272,7 +271,7 @@ func decodePublishPacket(r *packetReader, flags byte, remainingLength int) (*Pub
 
 	// 读取主题名
 	var err error
-	p.TopicName, err = readString(r)
+	p.TopicName, err = readBinary(r)
 	if err != nil {
 		return nil, err
 	}
@@ -287,7 +286,7 @@ func decodePublishPacket(r *packetReader, flags byte, remainingLength int) (*Pub
 	}
 
 	// 剩余的都是有效载荷
-	payloadLength := remainingLength - (r.pos - 1) // 减去已读取的部分
+	payloadLength := remainingLength - (r.pos - 1)
 	if payloadLength > 0 {
 		p.Payload = r.readBytes(payloadLength)
 	}
@@ -308,7 +307,7 @@ func decodeSubscribePacket(r *packetReader, flags byte) (*SubscribePacket, error
 
 	// 读取主题过滤器列表
 	for r.remaining() > 0 {
-		topicFilter, err := readString(r)
+		topicFilter, err := readBinary(r)
 		if err != nil {
 			return nil, err
 		}

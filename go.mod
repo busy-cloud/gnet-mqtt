@@ -2,7 +2,10 @@ module busy-cloud/gnet-mqtt
 
 go 1.24.6
 
-require github.com/panjf2000/gnet/v2 v2.9.5
+require (
+	github.com/gorilla/websocket v1.5.3
+	github.com/panjf2000/gnet/v2 v2.9.5
+)
 
 require (
 	github.com/panjf2000/ants/v2 v2.11.3 // indirect

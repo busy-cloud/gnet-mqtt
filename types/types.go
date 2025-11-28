@@ -1,33 +1,45 @@
 package types
 
-// Client表示MQTT客户端连接
+import (
+	"time"
+)
+
+// Client 表示一个MQTT客户端连接
 type Client struct {
-	ClientID     string
+	ClientID     []byte
 	CleanSession bool
 	KeepAlive    uint16
 	Connected    bool
 	WillMessage  *WillMessage
+	ConnType     string
 }
 
-// WillMessage遗嘱信息
+// WillMessage 遗嘱消息
 type WillMessage struct {
-	Topic   string
+	Topic   []byte
 	Payload []byte
 	QoS     byte
 	Retain  bool
 }
 
-// Subscription订阅关系
-type Sucscription struct {
-	TopicFilter string
+// Subscription 订阅关系
+type Subscription struct {
+	TopicFilter []byte
 	QoS         byte
 }
 
-// Message发布的消息
+// Message 发布的消息
 type Message struct {
-	Topic    string
+	Topic    []byte
 	Payload  []byte
 	QoS      byte
 	Retain   bool
 	PacketID uint16
+}
+
+// ClientContext 客户端上下文
+type ClientContext struct {
+	Client     *Client
+	LastActive time.Time
+	SendChan   chan []byte
 }
